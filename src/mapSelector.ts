@@ -18,7 +18,7 @@ import {
   removeDownloadedMap,
   setSelectedMapId,
 } from './communityMaps';
-import { stages } from './data/maps';
+import { defaultStageIndex, stages } from './data/maps';
 import { translate } from './localization';
 import { createMapBrowser } from './mapBrowser';
 import type { Roulette } from './roulette';
@@ -35,7 +35,7 @@ export interface MapSelectorOptions {
   mapBrowser?: boolean;
 }
 
-const DEFAULT_MAP_ID = 'builtin:0';
+const DEFAULT_MAP_ID = 'builtin:' + defaultStageIndex;
 
 const INSTALL_MESSAGES: Record<InstallResult['result'], string> = {
   installed: 'Map installed',

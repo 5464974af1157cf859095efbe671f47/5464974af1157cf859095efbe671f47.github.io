@@ -28,6 +28,7 @@ export function saveResolution(value: RenderResolution) {
 }
 
 class Options {
+  raceMode: 'classic' | 'gust' | 'tilt' = 'gust';
   useSkills: boolean = true;
   /** 0-based, 양끝 포함. 1명 추첨은 start === end */
   winnerRange: WinnerRange = { start: 0, end: 0 };

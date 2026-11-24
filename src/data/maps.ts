@@ -1,7 +1,9 @@
+import { glacierDrop, neonArcade, type TrackArt } from './arcadeTracks';
 import type { MapEntity } from '../types/MapEntity.type';
 
 export type StageDef = {
   title: string;
+  trackArt?: TrackArt;
   entities?: MapEntity[];
   goalY: number;
   zoomY: number;
@@ -3014,4 +3016,9 @@ export const stages: StageDef[] = [
       },
     ],
   },
+  neonArcade,
+  glacierDrop,
 ];
+
+// Append maps so previously saved builtin IDs keep referring to the same tracks.
+export const defaultStageIndex = stages.indexOf(neonArcade);

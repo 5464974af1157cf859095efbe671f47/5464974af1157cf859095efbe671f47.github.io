@@ -11,30 +11,38 @@
   <meta property="og:description" content="참가자 이름을 넣고 구슬을 굴려 당첨자를 뽑으세요.">
   <meta property="og:type" content="website">
   <link rel="icon" type="image/png" href="./assets/favicon-32x32.png">
-  <link rel='stylesheet' href='./game/assets/style.css' />
+  <link rel='stylesheet' href='./game/assets/style.css?v=2' />
 </head>
 <body>
-<script defer src="./game/src/index.js"></script>
-<script defer src="./controls.js"></script>
+<script defer src="./game/src/index.js?v=2"></script>
+<script defer src="./controls.js?v=2"></script>
 <h1 class="sr-only">핀핀볼 · 핀볼 추첨기</h1>
 <div id="settings" class="settings">
   <div class="right">
+    <div class="row quick-pick">
+      <label for='sltMap'>
+        <i class="icon map"></i>
+        <span data-trans>Map</span>
+      </label>
+      <div class="map-picker">
+        <select id="sltMap"></select>
+        <button id="btnRemoveMap" class="btn-map-action" type="button" hidden title="Remove this map" data-trans="title">✕</button>
+        <a id="lnkMoreMaps" class="btn-map-action" href="https://marblerouletteshop.com/maps" target="_blank" rel="noopener" title="Get more maps" data-trans="title">+</a>
+      </div>
+    </div>
+    <div class="row quick-pick">
+      <label for="sltMode" data-trans>Race mode</label>
+      <select id="sltMode">
+        <option value="gust" data-trans>Crosswind · switches every 3s</option>
+        <option value="tilt" data-trans>Manual tilt · left / right</option>
+        <option value="classic" data-trans>Classic · no wind</option>
+      </select>
+    </div>
     <button id="btnToggleSettings" class="btn-toggle-settings" aria-expanded="false" aria-controls="more-settings">
-      <span data-trans>Settings</span>
+      <span data-trans>Race settings</span>
       <i class="toggle-arrow">▲</i>
     </button>
     <div id="more-settings" class="collapsible-rows collapsed">
-      <div class="row">
-        <label for='sltMap'>
-          <i class="icon map"></i>
-          <span data-trans>Map</span>
-        </label>
-        <div class="map-picker">
-          <select id="sltMap"></select>
-          <button id="btnRemoveMap" class="btn-map-action" type="button" hidden title="Remove this map" data-trans="title">✕</button>
-          <a id="lnkMoreMaps" class="btn-map-action" href="https://marblerouletteshop.com/maps" target="_blank" rel="noopener" title="Get more maps" data-trans="title">+</a>
-        </div>
-      </div>
       <div class="row row-toggles">
         <div class='toggle-item'>
           <label for='chkAutoRecording'>
@@ -98,6 +106,14 @@
       </button>
     </div>
   </div>
+</div>
+<div id="tiltControls" role="group" aria-label="Tilt controls" data-trans="aria-label" hidden>
+  <button type="button" data-dir="-1" aria-keyshortcuts="ArrowLeft">
+    <b aria-hidden="true">←</b><span data-trans>Tilt left</span>
+  </button>
+  <button type="button" data-dir="1" aria-keyshortcuts="ArrowRight">
+    <span data-trans>Tilt right</span><b aria-hidden="true">→</b>
+  </button>
 </div>
 </body>
 </html>

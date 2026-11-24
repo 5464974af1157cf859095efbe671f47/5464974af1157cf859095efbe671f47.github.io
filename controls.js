@@ -146,15 +146,81 @@ function initialize() {
     getReady();
   });
 
+  const tiltControls = document.getElementById('tiltControls');
+  const held = new Map();
+  const tiltButtons = [...tiltControls.querySelectorAll('button')];
+
+  function syncTilt() {
+    const directions = new Set(held.values());
+    for (const button of tiltButtons) {
+      button.classList.toggle('held', directions.has(Number(button.dataset.dir)));
+    }
+    window.roulette.tilt(Number(directions.has(1)) - Number(directions.has(-1)));
+  }
+
+  function releaseTilt() {
+    held.clear();
+    syncTilt();
+  }
+
+  for (const button of tiltButtons) {
+    button.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      button.setPointerCapture(event.pointerId);
+      held.set(event.pointerId, Number(button.dataset.dir));
+      syncTilt();
+    });
+    button.addEventListener('lostpointercapture', (event) => {
+      held.delete(event.pointerId);
+      syncTilt();
+    });
+  }
+  const keys = { ArrowLeft: -1, ArrowRight: 1 };
+  for (const type of ['keydown', 'keyup']) {
+    window.addEventListener(type, (event) => {
+      if (tiltControls.hidden) return;
+      if (type === 'keyup') {
+        if (held.delete(event.key)) {
+          event.preventDefault();
+          syncTilt();
+        }
+        return;
+      }
+      const activatesButton = (event.key === ' ' || event.key === 'Enter') && tiltButtons.includes(event.target);
+      const direction = activatesButton ? Number(event.target.dataset.dir) : keys[event.key];
+      if (direction !== -1 && direction !== 1) return;
+      event.preventDefault();
+      if (event.repeat) return;
+      held.set(event.key, direction);
+      syncTilt();
+    });
+  }
+  window.addEventListener('blur', releaseTilt);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) releaseTilt();
+  });
+
   document.querySelector('#btnStart').addEventListener('click', () => {
     if (!ready) return;
     document.querySelector('#settings').classList.add('hide');
+    tiltControls.hidden = window.options.raceMode !== 'tilt';
     window.roulette.start();
   });
 
   document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
     window.options.autoRecording = e.target.matches(':checked');
     window.roulette.setAutoRecording(window.options.autoRecording);
+  });
+
+  const mode = document.querySelector('#sltMode');
+  try {
+    const saved = localStorage.getItem('pinpin.raceMode');
+    if (saved === 'classic' || saved === 'gust' || saved === 'tilt') window.options.raceMode = saved;
+  } catch { /* Use the default for this visit. */ }
+  mode.value = window.options.raceMode;
+  mode.addEventListener('change', () => {
+    window.options.raceMode = mode.value;
+    try { localStorage.setItem('pinpin.raceMode', mode.value); } catch { /* No storage available. */ }
   });
 
   const resolutionButtons = document.querySelectorAll('.btn-resolution');
@@ -182,6 +248,8 @@ function initialize() {
   document.querySelector('#in_rangeEnd').addEventListener('change', () => selectWinnerType('multi', 'end'));
 
   window.roulette.addEventListener('goal', () => {
+    tiltControls.hidden = true;
+    releaseTilt();
     ready = false;
     setTimeout(() => {
       document.querySelector('#settings').classList.remove('hide');

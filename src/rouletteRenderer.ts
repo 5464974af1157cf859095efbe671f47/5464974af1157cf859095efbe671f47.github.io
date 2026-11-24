@@ -1,3 +1,4 @@
+import { drawTrack, drawObstacleDetail, drawWind } from './arcadeArt';
 import type { Camera } from './camera';
 import { canvasHeight, canvasWidth, initialZoom, Themes, winnerAreaHeight } from './data/constants';
 import type { StageDef } from './data/maps';
@@ -6,7 +7,7 @@ import { drawResultClose } from './resultClose';
 import type { Rect } from './types/rect.type';
 import type { Marble } from './marble';
 import { MINIMAP_INSET, MINIMAP_WIDTH } from './minimap';
-import type { WinnerRange } from './options';
+import options, { type WinnerRange } from './options';
 import type { ParticleManager } from './particleManager';
 import type { ColorTheme } from './types/ColorTheme';
 import type { MapEntityState } from './types/MapEntity.type';
@@ -15,6 +16,7 @@ import type { UIObject } from './UIObject';
 
 export type RenderParameters = {
   camera: Camera;
+  wind: number;
   stage: StageDef;
   entities: MapEntityState[];
   marbles: Marble[];
@@ -220,7 +222,8 @@ export class RouletteRenderer {
     this._theme = renderParameters.theme;
     // 이후 모든 그리기는 논리 좌표 기준 (default 에서는 배율 1)
     this.ctx.setTransform(this._pixelScale, 0, 0, this._pixelScale, 0, 0);
-    this.ctx.fillStyle = this._theme.background;
+    const art = renderParameters.stage.trackArt;
+    this.ctx.fillStyle = art === 'neon' ? '#0c0916' : art === 'glacier' ? '#081620' : this._theme.background;
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     this.ctx.save();
@@ -230,9 +233,10 @@ export class RouletteRenderer {
     this.ctx.font = '0.4pt sans-serif';
     this.ctx.lineWidth = 3 / (renderParameters.camera.zoom + initialZoom);
     renderParameters.camera.renderScene(this.ctx, { x: this.width, y: this.height }, () => {
+      if (art) drawTrack(this.ctx, art, renderParameters.stage.goalY);
       this.onBeforeEntities();
       this.debugDraw?.(this.ctx);
-      this.renderEntities(renderParameters.entities);
+      this.renderEntities(renderParameters.entities, !!art);
       this.renderEffects(renderParameters);
       this.renderMarbles(renderParameters);
     });
@@ -241,6 +245,9 @@ export class RouletteRenderer {
 
     uiObjects.forEach((obj) => obj.render(this.ctx, renderParameters, this.width, this.height));
     renderParameters.particleManager.render(this.ctx);
+    if (renderParameters.wind) {
+      drawWind(this.ctx, this.width, this.sizeFactor, renderParameters.wind, options.raceMode === 'tilt' ? 'Tilt' : 'Crosswind');
+    }
     this.renderWinnerProgress(renderParameters);
     this.renderResult(renderParameters);
 
@@ -249,7 +256,7 @@ export class RouletteRenderer {
     }
   }
 
-  private renderEntities(entities: MapEntityState[]) {
+  private renderEntities(entities: MapEntityState[], arcade: boolean) {
     this.ctx.save();
     entities.forEach((entity) => {
       const transform = this.ctx.getTransform();
@@ -288,6 +295,7 @@ export class RouletteRenderer {
           break;
       }
 
+      if (arcade && shape.type !== 'polyline') drawObstacleDetail(this.ctx, entity);
       this.ctx.setTransform(transform);
     });
     this.ctx.restore();

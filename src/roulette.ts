@@ -1,6 +1,7 @@
+import { IceShards } from './arcadeArt';
 import { Camera } from './camera';
 import { canvasHeight, canvasWidth, initialZoom, Skills, Themes, zoomThreshold } from './data/constants';
-import { type StageDef, stages } from './data/maps';
+import { defaultStageIndex, type StageDef, stages } from './data/maps';
 import { FastForwader } from './fastForwader';
 import type { GameObject } from './gameObject';
 import type { IPhysics } from './IPhysics';
@@ -44,12 +45,15 @@ export class Roulette extends EventTarget {
   private _updateInterval = 10;
   private _timeScale = 1;
   private _speed = 1;
+  private _windElapsed = 0;
+  private _firstWind = 1;
+  private _wind = 0;
 
   private _winners: Marble[] = [];
   private _particleManager = new ParticleManager();
   private _stage: StageDef | null = null;
   /** 'builtin:{index}' | 'community:{id}'. 맵 공유마당에서 받은 맵은 stages 에 없어서 인덱스 대신 이 값으로 구분한다 */
-  private _mapId = 'builtin:0';
+  private _mapId = 'builtin:' + defaultStageIndex;
 
   protected _camera: Camera = new Camera();
   protected _renderer: RouletteRenderer;
@@ -145,6 +149,11 @@ export class Roulette extends EventTarget {
     let simSeconds = 0;
     while (this._elapsed >= this._updateInterval) {
       simSeconds += interval;
+      if (this._isRunning && options.raceMode === 'gust') {
+        this._wind = Math.floor(this._windElapsed / 3000) % 2 === 0 ? this._firstWind : -this._firstWind;
+        this.physics.setWind(5 * this._wind);
+        this._windElapsed += this._updateInterval;
+      }
       this.physics.step(interval);
       this._updateMarbles(this._updateInterval, timeScale);
       this._particleManager.update(this._updateInterval);
@@ -300,6 +309,7 @@ export class Roulette extends EventTarget {
     }
 
     this._result = ranked.slice(start, end + 1);
+    this.clearWind();
     this._isRunning = false;
     this.dispatchEvent(
       new CustomEvent('goal', {
@@ -354,6 +364,7 @@ export class Roulette extends EventTarget {
       effects: this._effects,
       winnerRange: this._winnerRange,
       result: this._result,
+      wind: this._wind,
       size: { x: this._renderer.width, y: this._renderer.height },
       theme: this._theme,
     };
@@ -361,7 +372,9 @@ export class Roulette extends EventTarget {
   }
 
   private async _init() {
-    this.physics = new Box2dPhysics();
+    this.physics = new Box2dPhysics((entity) => {
+      if (this._stage?.trackArt === 'glacier') this._effects.push(new IceShards(entity.x, entity.y));
+    });
     await this.physics.init();
 
     this.addUiObject(new RankRenderer());
@@ -378,7 +391,7 @@ export class Roulette extends EventTarget {
     this.addUiObject(minimap);
     this.fastForwarder = this.createFastForwader();
     this.addUiObject(this.fastForwarder);
-    this._stage = stages[0];
+    this._stage = stages[defaultStageIndex];
     this._loadMap();
   }
 
@@ -461,6 +474,7 @@ export class Roulette extends EventTarget {
   public async start() {
     this._isRunning = true;
     this._winnerRange = clipWinnerRange(options.winnerRange, this._marbles.length);
+    this._firstWind = Math.random() < 0.5 ? -1 : 1;
     this._camera.startFollowingMarbles();
 
     if (this._autoRecording) {
@@ -473,6 +487,12 @@ export class Roulette extends EventTarget {
     }
     this.physics.start();
     this._marbles.forEach((marble) => (marble.isActive = true));
+  }
+
+  public tilt(direction: number) {
+    if (!this._isRunning || options.raceMode !== 'tilt') return;
+    this._wind = Math.sign(direction);
+    this.physics.setWind(this._wind * 8);
   }
 
   public setSpeed(value: number) {
@@ -594,7 +614,16 @@ export class Roulette extends EventTarget {
     this._marbles = [];
   }
 
+  private clearWind() {
+    this._wind = 0;
+    this._windElapsed = 0;
+    this.physics.setWind(0);
+  }
+
   public reset() {
+    this._isRunning = false;
+    this.clearWind();
+    this._effects = [];
     this.clearMarbles();
     this._clearMap();
     this._loadMap();

@@ -13,6 +13,14 @@ export class Box2dPhysics implements IPhysics {
 
   private deleteCandidates: Box2D.b2Body[] = [];
 
+  constructor(private onBreak?: (entity: MapEntityState) => void) {}
+
+  setWind(horizontalGravity: number): void {
+    if (this.gravity.x === horizontalGravity) return;
+    this.gravity.set_x(horizontalGravity);
+    this.world.SetGravity(this.gravity);
+  }
+
   async init(): Promise<void> {
     this.Box2D = await Box2DFactory();
     this.gravity = new this.Box2D.b2Vec2(0, 10);
@@ -198,6 +206,7 @@ export class Box2dPhysics implements IPhysics {
       const entity = this.entities[i];
       if (entity.life > 0) {
         if (this.isTouchingAny(entity.body)) {
+          this.onBreak?.(entity);
           this.deleteCandidates.push(entity.body);
           this.entities.splice(i, 1);
         }
