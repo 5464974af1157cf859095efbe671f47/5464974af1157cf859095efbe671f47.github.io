@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>핀핀볼 · 핀볼 추첨기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171717">
+  <meta name="description" content="참가자 이름을 넣고 구슬을 굴려 당첨자를 뽑으세요.">
+  <meta property="og:title" content="핀핀볼 · 핀볼 추첨기">
+  <meta property="og:url" content="https://5464974af1157cf859095efbe671f47.github.io/">
+  <meta property="og:description" content="참가자 이름을 넣고 구슬을 굴려 당첨자를 뽑으세요.">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" href="./assets/favicon-32x32.png">
+  <link rel='stylesheet' href='./game/assets/style.css' />
+</head>
+<body>
+<script defer src="./game/src/index.js"></script>
+<script defer src="./controls.js"></script>
+<h1 class="sr-only">핀핀볼 · 핀볼 추첨기</h1>
+<div id="settings" class="settings">
+  <div class="right">
+    <button id="btnToggleSettings" class="btn-toggle-settings" aria-expanded="false" aria-controls="more-settings">
+      <span data-trans>Settings</span>
+      <i class="toggle-arrow">▲</i>
+    </button>
+    <div id="more-settings" class="collapsible-rows collapsed">
+      <div class="row">
+        <label for='sltMap'>
+          <i class="icon map"></i>
+          <span data-trans>Map</span>
+        </label>
+        <div class="map-picker">
+          <select id="sltMap"></select>
+          <button id="btnRemoveMap" class="btn-map-action" type="button" hidden title="Remove this map" data-trans="title">✕</button>
+          <a id="lnkMoreMaps" class="btn-map-action" href="https://marblerouletteshop.com/maps" target="_blank" rel="noopener" title="Get more maps" data-trans="title">+</a>
+        </div>
+      </div>
+      <div class="row row-toggles">
+        <div class='toggle-item'>
+          <label for='chkAutoRecording'>
+            <i class="icon record"></i>
+            <span data-trans>Recording</span>
+          </label>
+          <input type="checkbox" id="chkAutoRecording" />
+        </div>
+        <div class='toggle-item'>
+          <label for='chkSkill'>
+            <i class="icon bomb"></i>
+            <span data-trans>Using skills</span>
+          </label>
+          <input type="checkbox" id="chkSkill" checked />
+        </div>
+      </div>
+      <div class="row">
+        <label>
+          <i class="icon trophy"></i>
+          <span data-trans>The winner is</span>
+        </label>
+        <div class="btn-group">
+          <button class="btn-winner btn-first-winner active" data-trans>First</button>
+          <button class="btn-winner btn-last-winner" data-trans>Last</button>
+          <input type="number" aria-label="당첨 순위" id="in_winningRank" value="1" min="1" />
+          <button class="btn-winner btn-multi-winner" data-trans>Multiple</button>
+        </div>
+      </div>
+      <div class="row row-range">
+        <label></label>
+        <div class="btn-group range-group">
+          <input type="number" aria-label="당첨 시작 순위" id="in_rangeStart" value="1" min="1" />
+          <span class="range-sep">~</span>
+          <input type="number" aria-label="당첨 마지막 순위" id="in_rangeEnd" value="3" min="1" />
+        </div>
+      </div>
+      <div class="row">
+        <label title="Sharper rendering. Ultra may be heavy on 4K screens, especially while recording." data-trans="title">
+          <i class="icon display"></i>
+          <span data-trans>Resolution</span>
+        </label>
+        <div class="btn-group resolution-group">
+          <button class="btn-resolution" data-resolution="default" data-trans>Default</button>
+          <button class="btn-resolution" data-resolution="high">High</button>
+          <button class="btn-resolution" data-resolution="ultra">Ultra</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="left">
+    <h3><label for="in_names" data-trans>Enter names below</label></h3>
+    <textarea id="in_names" placeholder="Input names separated by commas or line feed here" data-trans="placeholder">수박*2,키위*2,귤*2</textarea>
+    <div class="actions">
+      <button id="btnShuffle">
+        <i class="icon shuffle"></i>
+        <span data-trans>Shuffle</span>
+      </button>
+      <button id="btnStart">
+        <i class="icon play"></i>
+        <span data-trans>Start</span>
+      </button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
