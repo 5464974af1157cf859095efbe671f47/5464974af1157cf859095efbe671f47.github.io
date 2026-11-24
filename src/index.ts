@@ -8,6 +8,6 @@ Object.assign(window, {
   roulette,
   options,
   initMapSelector(onMapChange: () => void, toast: (key: string) => void) {
-    initMapSelector({ roulette, onMapChange, toast, apiBase: 'https://marblerouletteshop.com' });
+    return initMapSelector({ roulette, onMapChange, toast, apiBase: 'https://marblerouletteshop.com' });
   },
 });

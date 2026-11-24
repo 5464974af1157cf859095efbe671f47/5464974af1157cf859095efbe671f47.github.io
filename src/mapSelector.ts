@@ -13,6 +13,7 @@ import {
   getSelectedMapId,
   getUpdatableMapIds,
   type InstallResult,
+  type DownloadedMap,
   installDownloadedMap,
   rememberRemoteMapState,
   removeDownloadedMap,
@@ -71,12 +72,12 @@ export function initMapSelector({ roulette, apiBase, onMapChange, toast, mapBrow
     return Array.from(select!.options).some((o) => o.value === id);
   }
 
-  function render() {
+  function render(installed = getDownloadedMaps()) {
     const builtin = stages.map((stage, index) => option(`builtin:${index}`, translate(stage.title)));
-    const downloaded = getDownloadedMaps().map((map) =>
+    const downloaded = installed.map((map) =>
       option(`community:${map.id}`, `${map.title} (by ${map.author})`)
     );
-    select!.replaceChildren();
+    select!.replaceChildren(option('random', translate('Random each round')));
     if (downloaded.length === 0) {
       select!.append(...builtin);
     } else {
@@ -90,21 +91,26 @@ export function initMapSelector({ roulette, apiBase, onMapChange, toast, mapBrow
   }
 
   /** 맵을 바꾼다. 없는 맵이면 false */
-  function apply(id: string): boolean {
+  function loadStage(id: string, installed?: DownloadedMap[]): boolean {
     if (id.startsWith('builtin:')) {
       const index = Number(id.slice('builtin:'.length));
       if (!Number.isInteger(index) || index < 0 || index >= stages.length) return false;
       roulette.setMap(index);
     } else if (id.startsWith('community:')) {
-      const map = getDownloadedMaps().find((m) => `community:${m.id}` === id);
+      const map = (installed ?? getDownloadedMaps()).find((m) => `community:${m.id}` === id);
       if (!map) return false;
       roulette.setStage(map.stage, id);
     } else {
       return false;
     }
+    onMapChange();
+    return true;
+  }
+
+  function apply(id: string): boolean {
+    if (id !== 'random' && !loadStage(id)) return false;
     setSelectedMapId(id);
     syncControls(id);
-    onMapChange();
     return true;
   }
 
@@ -161,7 +167,7 @@ export function initMapSelector({ roulette, apiBase, onMapChange, toast, mapBrow
     // render 가 옵션을 새로 만들면 선택값이 첫 맵으로 돌아가므로 미리 기억한다
     const current = select!.value;
     render();
-    if (!keepSelection || current === `community:${pkg.id}`) {
+    if (!document.getElementById('settings')?.inert && (!keepSelection || current === `community:${pkg.id}`)) {
       apply(`community:${pkg.id}`);
     } else {
       syncControls(current);
@@ -205,10 +211,11 @@ export function initMapSelector({ roulette, apiBase, onMapChange, toast, mapBrow
   // 처음 그리기: 기억해 둔 맵이 있으면 그 맵으로
   render();
   const saved = getSelectedMapId();
-  if (saved && saved !== DEFAULT_MAP_ID && hasOption(saved) && apply(saved)) {
-    // apply 가 선택까지 맞췄다
+  if (saved && hasOption(saved)) {
+    if (saved === 'random' || roulette.getCurrentMap()?.id === saved) syncControls(saved);
+    else apply(saved);
   } else {
-    syncControls(roulette.getCurrentMap()?.id ?? DEFAULT_MAP_ID);
+    syncControls('random');
   }
 
   // 맵 공유마당의 "마블룰렛에 설치"
@@ -232,4 +239,16 @@ export function initMapSelector({ roulette, apiBase, onMapChange, toast, mapBrow
       if (checked) updateBadge();
     });
   }
+
+  // The selector keeps the player's preference. A draw only loads the stage for this race.
+  return (pick: (preference: string, choices: string[]) => string) => {
+    const preference = select.value;
+    const installed = getDownloadedMaps();
+    render(installed);
+    syncControls(hasOption(preference) ? preference : 'random');
+    const choices = Array.from(select.options).filter((entry) => entry.value !== 'random');
+    const id = pick(select.value, choices.map((entry) => entry.value));
+    if (roulette.getCurrentMap()?.id !== id) loadStage(id, installed);
+    return choices.find((entry) => entry.value === id)!.text;
+  };
 }

@@ -11,6 +11,7 @@ import options, { isRenderResolution, saveResolution, type WinnerRange } from '.
 import { ParticleManager } from './particleManager';
 import { Box2dPhysics } from './physics-box2d';
 import { ProgressMap } from './progressMap';
+import { RaceCallouts } from './raceCallouts';
 import { RankRenderer } from './rankRenderer';
 import { type RenderResolution, RouletteRenderer } from './rouletteRenderer';
 import { SkillEffect } from './skillEffect';
@@ -48,6 +49,7 @@ export class Roulette extends EventTarget {
   private _windElapsed = 0;
   private _firstWind = 1;
   private _wind = 0;
+  private _callouts = new RaceCallouts();
 
   private _winners: Marble[] = [];
   private _particleManager = new ParticleManager();
@@ -164,6 +166,9 @@ export class Roulette extends EventTarget {
 
     if (this._marbles.length > 1) {
       this._sortMarbles(simSeconds);
+      if (this._isRunning && !this._winners.length && this._stage) {
+        this._callouts.update(this._marbles, this._stage.goalY, simSeconds);
+      }
     }
 
     if (this._stage) {
@@ -365,6 +370,7 @@ export class Roulette extends EventTarget {
       winnerRange: this._winnerRange,
       result: this._result,
       wind: this._wind,
+      note: this._isRunning && !this._winners.length ? this._callouts.note : null,
       size: { x: this._renderer.width, y: this._renderer.height },
       theme: this._theme,
     };
@@ -472,6 +478,7 @@ export class Roulette extends EventTarget {
   }
 
   public async start() {
+    this._callouts = new RaceCallouts();
     this._isRunning = true;
     this._winnerRange = clipWinnerRange(options.winnerRange, this._marbles.length);
     this._firstWind = Math.random() < 0.5 ? -1 : 1;

@@ -1,5 +1,10 @@
 export const Translations = {
   en: {
+    'Could not start this round': 'Could not start this round',
+    'Random each round': 'Random each round',
+    'Next round': 'Next round',
+    'Takes the lead': 'Takes the lead',
+    'Photo finish': 'Photo finish',
     'Manual tilt · left / right': 'Manual tilt · left / right',
     'Tilt controls': 'Tilt controls',
     'Tilt left': 'Tilt left',
@@ -76,6 +81,11 @@ export const Translations = {
       'Sharper rendering. Ultra may be heavy on 4K screens, especially while recording.',
   },
   ko: {
+    'Could not start this round': '경주를 시작하지 못했어요. 다시 시작해 주세요.',
+    'Random each round': '매판 랜덤',
+    'Next round': '다음 판',
+    'Takes the lead': '역전!',
+    'Photo finish': '결승 접전',
     'Manual tilt · left / right': '직접 틸트 · 좌우를 꾹 눌러요',
     'Tilt controls': '기울이기 조작',
     'Tilt left': '왼쪽',

@@ -21,8 +21,9 @@ function parseName(nameStr) {
 function getReady() {
   const names = getNames();
   window.roulette.setMarbles(names);
-  ready = names.length > 0;
-  localStorage.setItem('mbr_names', names.join(','));
+  ready = window.roulette.getCount() > 0;
+  document.getElementById('btnStart').disabled = !ready;
+  try { localStorage.setItem('mbr_names', names.join(',')); } catch { /* The round still works without storage. */ }
   applyWinnerSetting();
 }
 
@@ -102,7 +103,8 @@ function initialize() {
   if (namesFromUrl) {
     document.querySelector('#in_names').value = namesFromUrl.replace(/,/g, '\n');
   } else {
-    const savedNames = localStorage.getItem('mbr_names');
+    let savedNames;
+    try { savedNames = localStorage.getItem('mbr_names'); } catch { /* Use the starter names. */ }
     if (savedNames) {
       document.querySelector('#in_names').value = savedNames;
     }
@@ -200,27 +202,19 @@ function initialize() {
     if (document.hidden) releaseTilt();
   });
 
-  document.querySelector('#btnStart').addEventListener('click', () => {
-    if (!ready) return;
-    document.querySelector('#settings').classList.add('hide');
-    tiltControls.hidden = window.options.raceMode !== 'tilt';
-    window.roulette.start();
-  });
-
   document.querySelector('#chkAutoRecording').addEventListener('change', (e) => {
     window.options.autoRecording = e.target.matches(':checked');
     window.roulette.setAutoRecording(window.options.autoRecording);
   });
 
-  const mode = document.querySelector('#sltMode');
+  const mode = document.getElementById('sltMode');
+  const modes = [...mode.options].filter(entry => entry.value !== 'random');
   try {
     const saved = localStorage.getItem('pinpin.raceMode');
-    if (saved === 'classic' || saved === 'gust' || saved === 'tilt') window.options.raceMode = saved;
-  } catch { /* Use the default for this visit. */ }
-  mode.value = window.options.raceMode;
+    if ([...mode.options].some(entry => entry.value === saved)) mode.value = saved;
+  } catch { /* Use random for this visit. */ }
   mode.addEventListener('change', () => {
-    window.options.raceMode = mode.value;
-    try { localStorage.setItem('pinpin.raceMode', mode.value); } catch { /* No storage available. */ }
+    try { localStorage.setItem('pinpin.raceMode', mode.value); } catch { /* Optional storage. */ }
   });
 
   const resolutionButtons = document.querySelectorAll('.btn-resolution');
@@ -251,9 +245,14 @@ function initialize() {
     tiltControls.hidden = true;
     releaseTilt();
     ready = false;
+    const label = document.getElementById('startLabel');
+    label.textContent = 'Next round';
+    window.translateElement(label);
     setTimeout(() => {
-      document.querySelector('#settings').classList.remove('hide');
-    }, 3000);
+      settings.inert = false;
+      settings.classList.remove('hide');
+      start.disabled = !getNames().length;
+    }, 1800);
   });
 
   window.roulette.addEventListener('message', (e) => {
@@ -274,7 +273,48 @@ function initialize() {
   // 기본 맵 + 맵 공유마당에서 받은 맵. 선택 기억과 ?installMap= 설치도 여기서 한다.
   // 맵을 바꾸면 살아남은 구슬에서 이름을 뽑아 재구성하는데, 골인한 구슬이 사라지고
   // 무게(/n)도 날아가므로 원본인 이름 입력창에서 다시 채운다
-  window.initMapSelector(getReady, simpleToast);
+  const prepareMap = window.initMapSelector(getReady, simpleToast);
+  const map = document.getElementById('sltMap');
+  const settings = document.getElementById('settings');
+  const start = document.getElementById('btnStart');
+  const intro = document.getElementById('roundIntro');
+  const pickMap = makeRoundPicker('pinpin.draw.maps');
+  const pickMode = makeRoundPicker('pinpin.draw.modes');
+  let round = 0;
+  start.addEventListener('click', async () => {
+    if (settings.inert) return;
+    if (!ready) getReady();
+    if (!ready) return;
+    settings.inert = true;
+    settings.classList.add('hide');
+    try {
+      const mapName = prepareMap(pickMap);
+      const modeId = pickMode(mode.value, modes.map(entry => entry.value));
+      const modeName = modes.find(entry => entry.value === modeId).text;
+      window.options.raceMode = modeId;
+      round++;
+      document.getElementById('roundAnnouncement').textContent = 'ROUND ' + round + ' · ' + mapName + ' · ' + modeName;
+      if (map.value === 'random' || mode.value === 'random') {
+        const entries = [...map.options].filter(entry => entry.value !== 'random');
+        fillReel('mapReel', mapName, entries.map(entry => entry.text), map.value === 'random');
+        fillReel('modeReel', modeName.split(' · ')[0], modes.map(entry => entry.text.split(' · ')[0]), mode.value === 'random');
+        document.getElementById('roundNumber').textContent = String(round).padStart(2, '0');
+        intro.hidden = false;
+        const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 750 : 1550;
+        await new Promise(resolve => setTimeout(resolve, duration));
+        intro.hidden = true;
+      }
+      tiltControls.hidden = modeId !== 'tilt';
+      await window.roulette.start();
+    } catch (error) {
+      intro.hidden = true;
+      tiltControls.hidden = true;
+      settings.inert = false;
+      settings.classList.remove('hide');
+      console.error('Round could not start', error);
+      simpleToast('Could not start this round');
+    }
+  });
 
   function simpleToast(msg) {
     const toast = document.createElement('div');
@@ -292,4 +332,46 @@ function initialize() {
     }, 1200);
   }
 
+}
+
+
+// Draw without replacement. On a fresh cycle, keep the previous round out of the first draw.
+function makeRoundPicker(storageKey) {
+  const seen = new Set();
+  let last;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(storageKey));
+    if (Array.isArray(saved?.seen)) {
+      for (const value of saved.seen) if (typeof value === 'string') seen.add(value);
+      last = saved.last;
+    }
+  } catch { /* Start a fresh cycle if tab storage is unavailable. */ }
+  return (preference, choices) => {
+    let result = preference;
+    if (preference === 'random') {
+      const eligible = choices.length > 1 ? choices.filter(value => value !== last) : choices;
+      let pool = eligible.filter(value => !seen.has(value));
+      if (!pool.length) {
+        seen.clear();
+        pool = eligible;
+      }
+      result = pool[Math.floor(Math.random() * pool.length)];
+    }
+    seen.add(result);
+    last = result;
+    try { sessionStorage.setItem(storageKey, JSON.stringify({ seen: [...seen], last })); } catch { /* In-memory draw. */ }
+    return result;
+  };
+}
+
+function fillReel(id, finalLabel, labels, rolling) {
+  const reel = document.getElementById(id);
+  const others = rolling ? labels.filter(label => label !== finalLabel).slice(0, 2) : [];
+  const cells = [...others, finalLabel].map(label => {
+    const cell = document.createElement('strong');
+    cell.textContent = label;
+    return cell;
+  });
+  reel.replaceChildren(...cells);
+  reel.style.setProperty('--travel', String(-others.length));
 }

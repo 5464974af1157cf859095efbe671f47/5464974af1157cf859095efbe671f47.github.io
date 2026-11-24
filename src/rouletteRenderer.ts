@@ -3,6 +3,7 @@ import type { Camera } from './camera';
 import { canvasHeight, canvasWidth, initialZoom, Themes, winnerAreaHeight } from './data/constants';
 import type { StageDef } from './data/maps';
 import type { GameObject } from './gameObject';
+import { drawRaceCallout, type RaceNote } from './raceCallouts';
 import { drawResultClose } from './resultClose';
 import type { Rect } from './types/rect.type';
 import type { Marble } from './marble';
@@ -17,6 +18,7 @@ import type { UIObject } from './UIObject';
 export type RenderParameters = {
   camera: Camera;
   wind: number;
+  note: RaceNote | null;
   stage: StageDef;
   entities: MapEntityState[];
   marbles: Marble[];
@@ -248,6 +250,7 @@ export class RouletteRenderer {
     if (renderParameters.wind) {
       drawWind(this.ctx, this.width, this.sizeFactor, renderParameters.wind, options.raceMode === 'tilt' ? 'Tilt' : 'Crosswind');
     }
+    if (renderParameters.note) drawRaceCallout(this.ctx, renderParameters.note, this.width, this.sizeFactor);
     this.renderWinnerProgress(renderParameters);
     this.renderResult(renderParameters);
 

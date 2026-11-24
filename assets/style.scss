@@ -457,6 +457,100 @@ canvas {
 
 }
 
+#roundIntro:not([hidden]) {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: rgb(7 10 20 / 46%);
+}
+
+.draw-ticket {
+  width: min(34rem, calc(100vw - 2rem));
+  overflow: hidden;
+  color: #fcf8f0;
+  background: #141523;
+  border: 1px solid #71627f;
+  border-radius: 0.8rem;
+  box-shadow: 0 0.8rem 3rem #08071488;
+  font-family: system-ui, sans-serif;
+  animation: ticket-in 200ms ease-out both;
+}
+
+.draw-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.1rem;
+  background: #262137;
+  font: 700 0.9rem/1.1 ui-monospace, monospace;
+  letter-spacing: 0.09em;
+  b { margin-left: auto; color: #ffcf69; }
+}
+
+.draw-flag {
+  width: 1.5rem;
+  height: 1rem;
+  background: repeating-conic-gradient(#ffd47e 0 25%, transparent 0 50%) 0 0 / 0.5rem 0.5rem;
+  transform: skewX(-10deg);
+}
+
+.draw-slots {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  padding: 1.2rem 0;
+}
+
+.draw-slot {
+  min-width: 0;
+  padding: 0 1rem;
+  & + & { border-left: 1px solid #524757; }
+  > span { font-size: 0.9rem; color: #fac975; }
+  &:last-child > span { color: #7fe4da; }
+}
+
+.reel-window {
+  --cell: clamp(1.8rem, 4.5vw, 2.8rem);
+  height: var(--cell);
+  overflow: hidden;
+  margin-top: 0.25rem;
+
+  > div {
+    transform: translateY(calc(var(--cell) * var(--travel)));
+    animation: settle-reel 490ms cubic-bezier(.2,.7,.2,1) both;
+  }
+  strong {
+    display: block;
+    line-height: var(--cell);
+    font-size: clamp(1rem, 3.8vw, 1.75rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+#modeReel { animation-delay: 150ms; }
+.draw-fuse {
+  height: 3px;
+  background: linear-gradient(90deg, #ffc866, #ff7eb6, #85e4db);
+  transform-origin: left;
+  animation: draw-fuse 1.45s linear both;
+}
+@keyframes settle-reel {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(var(--cell) * var(--travel))); }
+}
+@keyframes ticket-in {
+  from { transform: translateY(0.6rem) scale(.97); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes draw-fuse { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .draw-ticket, .reel-window > div, .draw-fuse { animation: none; }
+}
+
 #tiltControls:not([hidden]) {
   position: fixed;
   z-index: 2;
